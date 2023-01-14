@@ -87,7 +87,7 @@ impl PICInstruction {
         return match self.intruction_category {
             PICCategory::ALUOperation => {
                 match (self.instruction_raw.bitwise_and_with_16(0x3C0).as_u16()) >> 6 {
-                    //4 bit opcode 9 downto 6
+                    //4 bit opcode 9 downto 6, right shifted by 6
                     0x000=> Some(PICMnemonic::MOVEWF),
                     0x001 => Some(PICMnemonic::CLR),
                     0x002 => Some(PICMnemonic::SUBWF),
