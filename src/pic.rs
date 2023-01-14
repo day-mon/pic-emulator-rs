@@ -86,53 +86,57 @@ impl PICInstruction {
     fn decode(&self) -> Option<PICMnemonic> {
         return match self.intruction_category {
             PICCategory::ALUOperation => {
-                match self.instruction_raw.bitwise_and_with_16(0x001F).as_u16() {
-                    0x0001 => Some(PICMnemonic::MOVEWF),
-                    0x0002 | 0x0003 => Some(PICMnemonic::CLR),
-                    0x0004 | 0x0005 => Some(PICMnemonic::SUBWF),
-                    0x0006 | 0x0007 => Some(PICMnemonic::DECF),
-                    0x0008 | 0x0009 => Some(PICMnemonic::IORWF),
-                    0x000A | 0x000B => Some(PICMnemonic::ANDWF),
-                    0x000C | 0x000D => Some(PICMnemonic::XORWF),
-                    0x000E | 0x000F => Some(PICMnemonic::ADDWF),
-                    0x0010 | 0x0011 => Some(PICMnemonic::MOVF),
-                    0x0012 | 0x0013 => Some(PICMnemonic::COMF),
-                    0x0014 | 0x0015 => Some(PICMnemonic::INCF),
-                    0x0016 | 0x0017 => Some(PICMnemonic::DECF),
-                    0x0018 | 0x0019 => Some(PICMnemonic::RRF),
-                    0x001A | 0x001B => Some(PICMnemonic::RLF),
-                    0x001C | 0x001D => Some(PICMnemonic::SWAPF),
-                    0x001E | 0x001F => Some(PICMnemonic::INCFSZ),
-                    _ => Some(PICMnemonic::UND),
+                match (self.instruction_raw.bitwise_and_with_16(0x3C0).as_u16()) >> 6 {
+                    //4 bit opcode 9 downto 6
+                    0x000=> Some(PICMnemonic::MOVEWF),
+                    0x001 => Some(PICMnemonic::CLR),
+                    0x002 => Some(PICMnemonic::SUBWF),
+                    0x003 => Some(PICMnemonic::DECF),
+                    0x004 => Some(PICMnemonic::IORWF),
+                    0x005 => Some(PICMnemonic::ANDWF),
+                    0x006 => Some(PICMnemonic::XORWF),
+                    0x007 => Some(PICMnemonic::ADDWF),
+                    0x008 => Some(PICMnemonic::MOVF),
+                    0x009 => Some(PICMnemonic::COMF),
+                    0x00A => Some(PICMnemonic::INCF),
+                    0x00B => Some(PICMnemonic::DECF),
+                    0x00C => Some(PICMnemonic::RRF),
+                    0x00D => Some(PICMnemonic::RLF),
+                    0x00E => Some(PICMnemonic::SWAPF),
+                    0x00F => Some(PICMnemonic::INCFSZ),
+                    _ => Some(PICMnemonic::UND), //There should not be any undefined ALU opearations
 
                }
             }
             PICCategory::BitOperation => {
-                match self.instruction_raw.bitwise_and_with_16(0x3000).as_u16() {
-                    0x0000 => Some(PICMnemonic::BCF),
-                    0x1000 => Some(PICMnemonic::BSF),
-                    0x2000 => Some(PICMnemonic::BTFSC),
-                    0x3000 => Some(PICMnemonic::BTFSS),
+                match self.instruction_raw.bitwise_and_with_16(0x300).as_u16() {
+                    //2 bit op code bits 9 & 8
+                    0x000 => Some(PICMnemonic::BCF),
+                    0x100 => Some(PICMnemonic::BSF),
+                    0x200 => Some(PICMnemonic::BTFSC),
+                    0x300 => Some(PICMnemonic::BTFSS),
                     _ => Some(PICMnemonic::UND)
                 }
             }
             PICCategory::ControlTransfer => {
-                match self.instruction_raw.bitwise_and_with_16(0x3000).as_u16() {
-                    0x0000 => Some(PICMnemonic::RETLW),
-                    0x1000 => Some(PICMnemonic::CALL),
-                    0x2000 => Some(PICMnemonic::GOTO),
+                match self.instruction_raw.bitwise_and_with_16(0x300).as_u16() {
+                    //2 bit opcode bits 9 & 8
+                    0x000 => Some(PICMnemonic::RETLW),
+                    0x100 => Some(PICMnemonic::CALL),
+                    0x200 | 0x300 => Some(PICMnemonic::GOTO),
                     _ => Some(PICMnemonic::UND)
 
                 }
             }
             PICCategory::Miscellaneous => {
-                match self.instruction_raw.bitwise_and_with_16(0x001F).as_u16() {
-                    0x0000 => Some(PICMnemonic::NOP),
-                    0x0002 => Some(PICMnemonic::OPTION),
-                    0x0003 => Some(PICMnemonic::SLEEP),
-                    0x0004 => Some(PICMnemonic::CLRWDT),
-                    0x0005..=0x07 => Some(PICMnemonic::TRIS),
-                    0x0010..=0x17 => Some(PICMnemonic::MOVLB),
+                //5 bit opcode 4 downto 0
+                match self.instruction_raw.bitwise_and_with_16(0x01F).as_u16() {
+                    0x000 => Some(PICMnemonic::NOP),
+                    0x002 => Some(PICMnemonic::OPTION),
+                    0x003 => Some(PICMnemonic::SLEEP),
+                    0x004 => Some(PICMnemonic::CLRWDT),
+                    0x005..=0x007 => Some(PICMnemonic::TRIS),
+                    0x010..=0x017 => Some(PICMnemonic::MOVLB),
                     0x001E => Some(PICMnemonic::RETURN),
                     0x001F => Some(PICMnemonic::RETFIE),
                     _ => Some(PICMnemonic::UND)
@@ -140,11 +144,12 @@ impl PICInstruction {
             }
         }
         PICCategory::OperationsWithW => {
-            match self.instruction_raw.bitwise_and_with_16(0x0300).as_u16() {
-                0x0000 => Some(PICMnemonic::MOVLW),
-                0x0100 => Some(PICMnemonic::IORLW),
-                0x2000 => Some(PICMnemonic::ANDLW),
-                0x3000 => Some(PICMnemonic::XORLW),
+            match self.instruction_raw.bitwise_and_with_16(0x300).as_u16() {
+                //2 bit opcode 9 & 8
+                0x000 => Some(PICMnemonic::MOVLW),
+                0x100 => Some(PICMnemonic::IORLW),
+                0x200 => Some(PICMnemonic::ANDLW),
+                0x300 => Some(PICMnemonic::XORLW),
                 _ => Some(PICMnemonic::UND)
 
                 }
