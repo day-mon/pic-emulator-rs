@@ -1,7 +1,4 @@
-use std::ops::ControlFlow;
-
-use crate::U12::U12;
-
+use crate::{nbitnumber::{u12, BitwiseOperations, NumberOperations}, data_memory::RegisterFile, program_memory::ProgramMemory};
 pub enum PICCategory {
     Miscellaneous,
     BitOperation,
@@ -35,15 +32,38 @@ pub enum PICMnemonic {
 }
 
 
+trait TuringMachine {
+    fn fetch() -> ();
+    fn execute() -> ();
+}
+
+impl TuringMachine for PIC10F200 {
+    fn fetch() -> () {
+        todo!()
+    }
+
+    fn execute() -> () {
+        todo!()
+    }
+}
+
+//Highest level wrapper of the MCU
+pub struct PIC10F200 {
+    data_memory : RegisterFile,
+    program_memory : ProgramMemory,
+    
+    
+}
+
 
 pub struct PICInstruction  {
-    instruction_raw: U12,
+    instruction_raw: u12,
     instruction: Option<PICMnemonic>,
     intruction_category: PICCategory,
 }
 
 impl PICInstruction {
-    pub fn from_U12(instruction: U12) -> PICInstruction {
+    pub fn from_U12(instruction: u12) -> PICInstruction {
         PICInstruction {
             instruction_raw: instruction,
             intruction_category: match instruction.bitwise_and_with_32(0xC000).as_u16() {
@@ -68,14 +88,6 @@ impl PICInstruction {
 
 
     fn execute(&self, instruction: &PICMnemonic) -> () {
-        todo!()
-    }
-
-    fn memory(&self) -> () {
-        todo!()
-    }
-
-    fn writeBack(&self) -> () {
         todo!()
     }
 

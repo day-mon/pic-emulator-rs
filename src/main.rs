@@ -13,7 +13,10 @@
 //declare state
 
 mod pic;
-pub mod U12;
+pub mod nbitnumber;
+pub mod program_memory;
+pub mod data_memory;
+pub mod test;
 
 // let PC = //should point to bootloader in ROM
 fn main() {
