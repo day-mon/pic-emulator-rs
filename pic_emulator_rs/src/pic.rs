@@ -1,5 +1,6 @@
 use crate::{nbitnumber::{u12, u9, BitwiseOperations, NumberOperations}, data_memory::RegisterFile, program_memory::ProgramMemory, data_memory::SpecialPurposeRegisters};
 
+#[derive(Clone, Copy)]
 pub enum PICCategory {
     Miscellaneous,
     BitOperation,
@@ -34,24 +35,24 @@ pub enum PICMnemonic {
 
 
 trait TuringMachine {
-    fn fetch(&self) -> ();
+    fn fetch(&mut self) -> ();
     fn execute(&self) -> ();
-    fn tick(&self) -> ();
+    fn tick(&mut self) -> ();
 }
 
 trait Programmable {
-    fn program_chip(&self, new_program: [u12; 0x200]) -> ();
+    fn program_chip(&mut self, new_program: [u12; 0x200]) -> ();
 }
 
 impl Programmable for PIC10F200 {
-    fn program_chip(&self, new_program: [u12; 0x200]) -> () {
+    fn program_chip(&mut self, new_program: [u12; 0x200]) -> () {
         self.program_memory.flash(new_program);
         self.data_memory.flash();
     }
 }
 
 impl TuringMachine for PIC10F200 {
-    fn fetch(&self) -> () {
+    fn fetch(&mut self) -> () {
         //this is just a temprory variable, not the actual PC register
         let PCL = self.data_memory.read(SpecialPurposeRegisters::PCL as u8);
 
@@ -59,15 +60,14 @@ impl TuringMachine for PIC10F200 {
         let PC = u9::new(PCL as u16);
 
         //upon construction, the instruction is decoded
-        self.current_instruction = PICInstruction::from_U12(self.program_memory.fetch(PC));
+        self.current_instruction = PICInstruction::from_u12(self.program_memory.fetch(PC));
     }
 
     fn execute(&self) -> () {
-        //execute the function associated with current_instruction
-        todo!()
+        
     }
 
-    fn tick(&self) -> () {
+    fn tick(&mut self) -> () {
         //Execute first, per the pipeline flow
         self.execute(); //the first cycle should skip execution, AKA when PCL == RESET_VECTOR
         self.fetch();
@@ -76,9 +76,9 @@ impl TuringMachine for PIC10F200 {
 
 //Highest level wrapper of the MCU
 pub struct PIC10F200 {
-    data_memory : RegisterFile,
-    program_memory : ProgramMemory,
-    current_instruction : PICInstruction,
+    data_memory: RegisterFile,
+    program_memory: ProgramMemory,
+    current_instruction: PICInstruction,
 }
 
 
@@ -89,7 +89,7 @@ pub struct PICInstruction  {
 }
 
 impl PICInstruction {
-    pub fn from_U12(instruction: u12) -> PICInstruction {
+    pub fn from_u12(instruction: u12) -> PICInstruction {
         let mut pic_instruction = PICInstruction {
             instruction_raw: instruction,
             intruction_category: PICInstruction::decode_category(instruction),
@@ -102,9 +102,9 @@ impl PICInstruction {
 
     fn decode_category(instruction: u12) -> PICCategory {
         return match instruction.bitwise_and_with_32(0xC000).as_u16() {
-            // misc & alu -> 0000 | 0000 | 0000 \ 
+            // misc & alu -> 0000 | 0000 | 0000
             // bit  -> 0100 | 0000 | 0000
-            // control 1000 | 0000 | 0000 
+            // control 1000 | 0000 | 0000
             // operations = 1100 | 0000 | 0000
             0x0000 => match instruction.bitwise_and_with_16(0x03E0).as_u16() {
                 0x0000 => PICCategory::Miscellaneous, 
@@ -122,7 +122,7 @@ impl PICInstruction {
     /*
         Hex codes are the OPCO
      */
-     fn decode_mnemonic(instruction : u12, category : PICCategory) -> Option<PICMnemonic> {
+     fn decode_mnemonic(instruction: u12, category: PICCategory) -> Option<PICMnemonic> {
         return match category {
             PICCategory::ALUOperation => {
                 match (instruction.bitwise_and_with_16(0x3C0).as_u16()) >> 6 {

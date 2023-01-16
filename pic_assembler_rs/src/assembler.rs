@@ -11,7 +11,7 @@ pub enum PICCategory {
     ALUOperation,
 }
 
-pub static struct INSTRUCTION {
+pub struct INSTRUCTION {
     pub mnemonic: String,
     pub category: PICCategory,
     pub opcode: u12,
@@ -71,7 +71,6 @@ pub const INSTRUCTION_TABLE: HashMap<&str, u12> = [
     ("RETLW", 0x800),
     ("CALL", 0x900),
     ("GOTO", 0xA00),
-
 ].iter().cloned().collect();
 
 //RETURN THE LENGTH OF THE FIRST OPERAND in bits
