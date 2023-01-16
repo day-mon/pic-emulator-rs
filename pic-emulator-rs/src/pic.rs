@@ -37,6 +37,10 @@ trait TuringMachine {
     fn execute() -> ();
 }
 
+trait Programmable {
+    fn program_chip() -> ();
+}
+
 impl TuringMachine for PIC10F200 {
     fn fetch() -> () {
         todo!()
