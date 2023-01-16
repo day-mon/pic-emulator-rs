@@ -1,5 +1,5 @@
 [workspace]
 members = [
-	"pic-emulator-rs",
-	"pic-assembler-rs",
+	"pic_emulator_rs",
+	"pic_assembler_rs",
 ]
