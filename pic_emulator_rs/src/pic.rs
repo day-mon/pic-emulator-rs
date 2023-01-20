@@ -1,5 +1,6 @@
 use crate::{nbitnumber::{u12, u9, BitwiseOperations, NumberOperations, NBitNumber}, data_memory::RegisterFile, program_memory::ProgramMemory, data_memory::SpecialPurposeRegisters, instructions::*};
 
+#[derive(Clone, Copy)]
 pub enum PICCategory {
     Miscellaneous,
     BitOperation,
@@ -56,7 +57,7 @@ impl TuringMachine for PIC10F200 {
         //this is just a temprory variable, not the actual PC register
         let PCL = self.data_memory.read(SpecialPurposeRegisters::PCL as u8);
 
-        //translate PC to u9 (we might want to sign extend it for off chip memory)
+        //translate PC to u9 (we might want to sign extend it for off chip memory
         self.program_counter = u9::new(PCL as u16);
         self.current_instruction = PICInstruction::from_U12(self.program_memory.fetch(self.program_counter));
     }
@@ -160,7 +161,7 @@ pub struct PICInstruction  {
 }
 
 impl PICInstruction {
-    pub fn from_U12(instruction: u12) -> PICInstruction {
+    pub fn from_u12(instruction: u12) -> PICInstruction {
         let mut pic_instruction = PICInstruction {
             instruction_raw: instruction,
             intsruction_category: PICInstruction::decode_category(instruction),
@@ -172,9 +173,9 @@ impl PICInstruction {
 
     fn decode_category(instruction: u12) -> PICCategory {
         return match instruction.bitwise_and_with_32(0xC000).as_u16() {
-            // misc & alu -> 0000 | 0000 | 0000 \ 
+            // misc & alu -> 0000 | 0000 | 0000
             // bit  -> 0100 | 0000 | 0000
-            // control 1000 | 0000 | 0000 
+            // control 1000 | 0000 | 0000
             // operations = 1100 | 0000 | 0000
             0x0000 => match instruction.bitwise_and_with_16(0x03E0).as_u16() {
                 0x0000 => PICCategory::Miscellaneous, 
@@ -189,8 +190,6 @@ impl PICInstruction {
         };
     }
 
-    fn extract_f(instruction: u12) -> NBitNumber<5> {
-        return NBitNumber::new(instruction.bitwise_and_with_16(0x01F).as_u16() >> 7);
     }
 
     
