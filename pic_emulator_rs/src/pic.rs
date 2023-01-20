@@ -59,7 +59,7 @@ impl TuringMachine for PIC10F200 {
 
         //translate PC to u9 (we might want to sign extend it for off chip memory
         self.program_counter = u9::new(PCL as u16);
-        self.current_instruction = PICInstruction::from_U12(self.program_memory.fetch(self.program_counter));
+        self.current_instruction = PICInstruction::from_u12(self.program_memory.fetch(self.program_counter));
     }
 
     fn execute(&mut self) -> () {
@@ -192,6 +192,3 @@ impl PICInstruction {
 
     }
 
-    
-
-}
