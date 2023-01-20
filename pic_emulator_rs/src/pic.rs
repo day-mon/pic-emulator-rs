@@ -1,4 +1,4 @@
-use crate::{nbitnumber::{u12, u9, BitwiseOperations, NumberOperations}, data_memory::RegisterFile, program_memory::ProgramMemory, data_memory::SpecialPurposeRegisters};
+use crate::{nbitnumber::{u12, u9, BitwiseOperations, NumberOperations, NBitNumber}, data_memory::RegisterFile, program_memory::ProgramMemory, data_memory::SpecialPurposeRegisters, instructions::*};
 
 pub enum PICCategory {
     Miscellaneous,
@@ -9,15 +9,15 @@ pub enum PICCategory {
 }
 pub enum PICMnemonic {
     // Miscellaneous
-    NOP, CLRWDT, OPTION, RETFIE,
+    NOP, CLRWDT, OPTION, RETFIE, 
     SLEEP, MOVLB, TRIS, RETURN,
-    
 
     // ALU Operation
-    MOVEWF, CLR, SUBWF, DECF,
+    MOVEWF, CLR, SUBWF, DECF, 
     IORWF, ANDWF, XORWF, ADDWF,
-    MOVF, COMF, INCF, DECFSZ,
-    RRF, RLF, SWAPF, INCFSZ,
+    MOVF, COMF, INCF, DECFSZ, 
+    RRF, RLF, SWAPF, INCFSZ, 
+
 
     // Bit Operation
     BCF, BSF, BTFSC, BTFSS,
@@ -34,43 +34,113 @@ pub enum PICMnemonic {
 
 
 trait TuringMachine {
-    fn fetch(&self) -> ();
-    fn execute(&self) -> ();
-    fn tick(&self) -> ();
+    fn fetch(&mut self) -> ();
+    fn execute(&mut self) -> ();
+    fn tick(&mut self) -> ();
+    fn decode_mnemonic(&mut self) -> ();
 }
 
 trait Programmable {
-    fn program_chip(&self, new_program: [u12; 0x200]) -> ();
+    fn program_chip(&mut self, new_program: [u12; 0x200]) -> ();
 }
 
 impl Programmable for PIC10F200 {
-    fn program_chip(&self, new_program: [u12; 0x200]) -> () {
+    fn program_chip(&mut self, new_program: [u12; 0x200]) -> () {
         self.program_memory.flash(new_program);
         self.data_memory.flash();
     }
 }
 
 impl TuringMachine for PIC10F200 {
-    fn fetch(&self) -> () {
+    fn fetch(&mut self) -> () {
         //this is just a temprory variable, not the actual PC register
         let PCL = self.data_memory.read(SpecialPurposeRegisters::PCL as u8);
 
         //translate PC to u9 (we might want to sign extend it for off chip memory)
-        let PC = u9::new(PCL as u16);
-
-        //upon construction, the instruction is decoded
-        self.current_instruction = PICInstruction::from_U12(self.program_memory.fetch(PC));
+        self.program_counter = u9::new(PCL as u16);
+        self.current_instruction = PICInstruction::from_U12(self.program_memory.fetch(self.program_counter));
     }
 
-    fn execute(&self) -> () {
-        //execute the function associated with current_instruction
-        todo!()
+    fn execute(&mut self) -> () {
+        //start the pipeline
+        self.decode_mnemonic();
     }
 
-    fn tick(&self) -> () {
+    fn tick(&mut self) -> () {
         //Execute first, per the pipeline flow
         self.execute(); //the first cycle should skip execution, AKA when PCL == RESET_VECTOR
         self.fetch();
+    }
+
+    fn decode_mnemonic(&mut self) ->  ()
+    {
+        match self.current_instruction.intsruction_category {
+            PICCategory::ALUOperation => {
+                match (self.current_instruction.instruction_raw.bitwise_and_with_16(0x3C0).as_u16()) >> 6 {
+                    //4 bit opcode 9 downto 6, right shifted by 6
+                    0x000 => MOVEWF(self),
+                    0x001 => CLR(self),
+                    0x002 => SUBWF(self),
+                    0x003 => DECF(self),
+                    0x004 => IORWF(self),
+                    0x005 => ANDWF(self),
+                    0x006 => XORWF(self),
+                    0x007 => ADDWF(self),
+                    0x008 => MOVF(self),
+                    0x009 => COMF(self),
+                    0x00A => INCF(self),
+                    0x00B => DECF(self),
+                    0x00C => RRF(self),
+                    0x00D => RLF(self),
+                    0x00E => SWAPF(self),
+                    0x00F => INCFSZ(self),
+                    _ => HALT(self) //There should not be any undefined ALU opearations
+                }
+            }
+            PICCategory::BitOperation => {
+                match self.current_instruction.instruction_raw.bitwise_and_with_16(0x300).as_u16() {
+                    //2 bit op code bits 9 & 8
+                    0x000 => BCF(self),
+                    0x100 => BSF(self),
+                    0x200 => BTFSC(self),
+                    0x300 => BTFSS(self),
+                    _ => HALT(self),
+                }
+            }
+            PICCategory::ControlTransfer => {
+                match self.current_instruction.instruction_raw.bitwise_and_with_16(0x300).as_u16() {
+                    //2 bit opcode bits 9 & 8
+                    0x000 => RETLW(self),
+                    0x100 => CALL(self),
+                    0x200 | 0x300 => GOTO(self),
+                    _ => HALT(self)
+                }
+            }
+            PICCategory::Miscellaneous => {
+                //5 bit opcode 4 downto 0
+                match self.current_instruction.instruction_raw.bitwise_and_with_16(0x01F).as_u16() {
+                    0x000 => NOP(self),
+                    0x002 => OPTION(self),
+                    0x003 => SLEEP(self),
+                    0x004 => CLRWDT(self),
+                    0x005..=0x007 => TRIS(self),
+                    0x010..=0x017 => MOVLB(self),
+                    0x001E => RETURN(self),
+                    0x001F => RETFIE(self),
+                    _ => HALT(self),
+                }
+            }
+            PICCategory::OperationsWithW => {
+                match self.current_instruction.instruction_raw.bitwise_and_with_16(0x300).as_u16() {
+                    //2 bit opcode 9 & 8
+                    0x000 => MOVLW(self),
+                    0x100 => IORLW(self),
+                    0x200 => ANDLW(self),
+                    0x300 => XORLW(self),
+                    _ => HALT(self),
+                }
+            }
+        };
     }
 }
 
@@ -78,26 +148,26 @@ impl TuringMachine for PIC10F200 {
 pub struct PIC10F200 {
     data_memory : RegisterFile,
     program_memory : ProgramMemory,
+    program_counter : u9,
     current_instruction : PICInstruction,
 }
 
 
 pub struct PICInstruction  {
     instruction_raw: u12,
-    instruction: Option<PICMnemonic>,
-    intruction_category: PICCategory,
+    //instruction: Option<PICMnemonic>,
+    intsruction_category: PICCategory,
 }
 
 impl PICInstruction {
     pub fn from_U12(instruction: u12) -> PICInstruction {
         let mut pic_instruction = PICInstruction {
             instruction_raw: instruction,
-            intruction_category: PICInstruction::decode_category(instruction),
-            instruction: None,
-        };
+            intsruction_category: PICInstruction::decode_category(instruction),
+        };    
+        //pic_instruction
 
-        pic_instruction.instruction = PICInstruction::decode_mnemonic(instruction, pic_instruction.intruction_category);        
-        pic_instruction
+        return pic_instruction;
     }
 
     fn decode_category(instruction: u12) -> PICCategory {
@@ -119,78 +189,10 @@ impl PICInstruction {
         };
     }
 
-    /*
-        Hex codes are the OPCO
-     */
-     fn decode_mnemonic(instruction : u12, category : PICCategory) -> Option<PICMnemonic> {
-        return match category {
-            PICCategory::ALUOperation => {
-                match (instruction.bitwise_and_with_16(0x3C0).as_u16()) >> 6 {
-                    //4 bit opcode 9 downto 6, right shifted by 6
-                    0x000=> Some(PICMnemonic::MOVEWF),
-                    0x001 => Some(PICMnemonic::CLR),
-                    0x002 => Some(PICMnemonic::SUBWF),
-                    0x003 => Some(PICMnemonic::DECF),
-                    0x004 => Some(PICMnemonic::IORWF),
-                    0x005 => Some(PICMnemonic::ANDWF),
-                    0x006 => Some(PICMnemonic::XORWF),
-                    0x007 => Some(PICMnemonic::ADDWF),
-                    0x008 => Some(PICMnemonic::MOVF),
-                    0x009 => Some(PICMnemonic::COMF),
-                    0x00A => Some(PICMnemonic::INCF),
-                    0x00B => Some(PICMnemonic::DECF),
-                    0x00C => Some(PICMnemonic::RRF),
-                    0x00D => Some(PICMnemonic::RLF),
-                    0x00E => Some(PICMnemonic::SWAPF),
-                    0x00F => Some(PICMnemonic::INCFSZ),
-                    _ => Some(PICMnemonic::UND), //There should not be any undefined ALU opearations
-
-               }
-            }
-            PICCategory::BitOperation => {
-                match instruction.bitwise_and_with_16(0x300).as_u16() {
-                    //2 bit op code bits 9 & 8
-                    0x000 => Some(PICMnemonic::BCF),
-                    0x100 => Some(PICMnemonic::BSF),
-                    0x200 => Some(PICMnemonic::BTFSC),
-                    0x300 => Some(PICMnemonic::BTFSS),
-                    _ => Some(PICMnemonic::UND)
-                }
-            }
-            PICCategory::ControlTransfer => {
-                match instruction.bitwise_and_with_16(0x300).as_u16() {
-                    //2 bit opcode bits 9 & 8
-                    0x000 => Some(PICMnemonic::RETLW),
-                    0x100 => Some(PICMnemonic::CALL),
-                    0x200 | 0x300 => Some(PICMnemonic::GOTO),
-                    _ => Some(PICMnemonic::UND)
-
-                }
-            }
-            PICCategory::Miscellaneous => {
-                //5 bit opcode 4 downto 0
-                match instruction.bitwise_and_with_16(0x01F).as_u16() {
-                    0x000 => Some(PICMnemonic::NOP),
-                    0x002 => Some(PICMnemonic::OPTION),
-                    0x003 => Some(PICMnemonic::SLEEP),
-                    0x004 => Some(PICMnemonic::CLRWDT),
-                    0x005..=0x007 => Some(PICMnemonic::TRIS),
-                    0x010..=0x017 => Some(PICMnemonic::MOVLB),
-                    0x001E => Some(PICMnemonic::RETURN),
-                    0x001F => Some(PICMnemonic::RETFIE),
-                    _ => Some(PICMnemonic::UND)
-                    }
-            }
-            PICCategory::OperationsWithW => {
-            match instruction.bitwise_and_with_16(0x300).as_u16() {
-                //2 bit opcode 9 & 8
-                0x000 => Some(PICMnemonic::MOVLW),
-                0x100 => Some(PICMnemonic::IORLW),
-                0x200 => Some(PICMnemonic::ANDLW),
-                0x300 => Some(PICMnemonic::XORLW),
-                _ => Some(PICMnemonic::UND)
-                }
-            }
-        };
+    fn extract_f(instruction: u12) -> NBitNumber<5> {
+        return NBitNumber::new(instruction.bitwise_and_with_16(0x01F).as_u16() >> 7);
     }
+
+    
+
 }
