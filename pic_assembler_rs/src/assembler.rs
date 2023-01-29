@@ -92,12 +92,12 @@ pub fn assemble_pic_file(pic_file: &str) -> ([u12 ; 0x200]) {
 
 //Translate a line of PIC code into machine code
 pub fn encode(pic_line : &str) -> u12 {
-    let PNUMONIC = pic_line[0];
+    let PNEUMONIC = pic_line[0];
     let OPERAND1 = pic_line[1];
     let OPERAND2 = pic_line[2];
     
     //get the opcode from the instruction table
-    let opcode = INSTRUCTION_TABLE[PNUMONIC];
+    let opcode = INSTRUCTION_TABLE[PNEUMONIC];
 
     //Add the first operand to the opcode
     let machine_code = opcode + OPERAND1;

@@ -1,8 +1,12 @@
+use crate::nbitnumber::{NBitNumber, NumberOperations};
+use crate::nbitnumber::{u2, u3, u5, u7, u9, u12};
+
 //7 special purpose registers
 //16 general purpose registers
-
+//0x10 - 0x1F are GP
+//0x00 - 0x10 are special + undefined
 pub const REG_FILE_SIZE : u8 = 0x20;
-pub const REG_FILE_MAX_ADDR : u8 = REG_FILE_SIZE - 1;
+pub const REG_FILE_MAX_ADDR : u8 =  0x1F;
 pub const REG_FILE_GP_OFFSET : u8 = 0x10;
 
 
@@ -13,7 +17,7 @@ struct Register {
 
 impl Register {
     pub fn new() -> Self {
-        Register { value: 0 }
+        Register { value: 0x00 }
     }
 }
 
@@ -57,12 +61,13 @@ impl RegisterFile {
     }
     
     pub fn flash(&mut self) -> () {
-        self.write(SpecialPurposeRegisters::PCL as u8, 0x00)
+        //set all memory locations to 0
+        self.registers = [Register::new(); REG_FILE_SIZE as usize]
     }
 
-    pub fn read(&self, address: u8) -> u8 {
+    pub fn read(&self, address: u5) -> u8 {
         //indirect referencing
-        if address == SpecialPurposeRegisters::INDF as u8 {
+        if address == u5::new(SpecialPurposeRegisters::INDF as u16) {
             // grab the the refrence int he fsr register
             let fsr_pointer = self.registers[SpecialPurposeRegisters::FSR as usize].value;
             // grab the value at that address that was in the fsr register
@@ -71,11 +76,11 @@ impl RegisterFile {
         }
 
         
-        if (0x08..=0x0F).contains(&address) {
+        if (0x08..=0x0F).contains(&address.as_u16()) {
             //unimplented registers in PIC10F200
             return 0x00;
         }
 
-        return self.registers[address as usize].value
+        return self.registers[address.as_usize()].value
     }
 }

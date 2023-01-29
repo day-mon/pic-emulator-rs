@@ -1,5 +1,9 @@
 use std::ops;
 
+use derive_more::*;
+
+
+#[derive(Add, Sub, BitAnd, BitOr, Shl, Shr, Sum, Not, Into, PartialEq, PartialOrd, Eq)]
 pub struct NBitNumber<const N: usize> {
     pub value: u16,
 }
@@ -13,10 +17,6 @@ pub trait NumberOperations<const N: usize> {
 
 }
 
-pub trait BitwiseOperations {
-    fn bitwise_and_with_16(&self, rhs: u16) -> Self;
-    fn bitwise_and_with_32(&self, rhs: u32) -> Self;
-}
 
 impl<const N: usize> NBitNumber<N> {
     pub fn new(value: u16) -> Self {
@@ -50,28 +50,9 @@ impl<const N: usize> NumberOperations<N> for NBitNumber<N> {
     }
 }
 
-impl<const N: usize> BitwiseOperations for NBitNumber<N> {
-    fn bitwise_and_with_16(&self, rhs: u16) -> Self {
-        NBitNumber::<N>::new(self.value & rhs)
-    }
-
-
-    fn bitwise_and_with_32(&self, rhs: u32) -> Self {
-        NBitNumber::<N>::new(self.value & rhs as u16)
-    }
-}
-
 impl<const N: usize> Clone for NBitNumber<N> {
     fn clone(&self) -> Self {
         NBitNumber::<N>::new(self.value)
-    }
-}
-
-impl<const N: usize> ops::Add<usize> for NBitNumber<N> {
-    type Output = Self;
-
-    fn add(self, rhs: usize) -> Self {
-        NBitNumber::<N>::new(self.value + rhs as u16)
     }
 }
 
@@ -81,4 +62,7 @@ impl<const N: usize> Copy for NBitNumber<N> {}
 
 pub type u12 = NBitNumber<12>;
 pub type u7 = NBitNumber<7>;
+pub type u5 = NBitNumber<5>;
 pub type u9 = NBitNumber<9>;
+pub type u3 = NBitNumber<3>;
+pub type u2 = NBitNumber<2>;
