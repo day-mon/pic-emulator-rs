@@ -3,6 +3,8 @@ use pic_emulator_rs::pic;
 
 use std::collections::HashMap;
 
+pub mod tests;
+
 pub enum PICCategory {
     Miscellaneous,
     BitOperation,
