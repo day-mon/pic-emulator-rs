@@ -2,7 +2,6 @@ use std::ops;
 
 use derive_more::*;
 
-
 #[derive(Add, Sub, BitAnd, BitOr, Shl, Shr, Sum, Not, Into, PartialEq, PartialOrd, Eq)]
 pub struct NBitNumber<const N: usize> {
     pub value: u16,
