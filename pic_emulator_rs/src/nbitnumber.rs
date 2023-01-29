@@ -1,5 +1,3 @@
-use std::ops;
-
 use derive_more::*;
 
 #[derive(Add, Sub, BitAnd, BitOr, Shl, Shr, Sum, Not, Into, PartialEq, PartialOrd, Eq)]
@@ -28,14 +26,6 @@ impl<const N: usize> NBitNumber<N> {
 }
 
 impl<const N: usize> NumberOperations<N> for NBitNumber<N> {
-    fn new() -> Self {
-        NBitNumber::<N>::new(0)
-    }
-
-    fn get(&self) -> u16 {
-        self.value
-    }
-
     fn get_max() -> Self {
         NBitNumber::<N>::new((1 << N) - 1)
     }
@@ -46,6 +36,14 @@ impl<const N: usize> NumberOperations<N> for NBitNumber<N> {
 
     fn as_usize(&self) -> usize {
         self.value as usize
+    }
+
+    fn get(&self) -> u16 {
+        self.value
+    }
+
+    fn new() -> Self {
+        NBitNumber::<N>::new(0)
     }
 }
 

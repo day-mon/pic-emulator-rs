@@ -1,5 +1,5 @@
 use crate::{nbitnumber::{
-    u12, u9, u5, u7, u3, u2,
+    u12, u9, u5, u3, u2,
     NumberOperations, NBitNumber
 }, data_memory::RegisterFile, program_memory::ProgramMemory, data_memory::SpecialPurposeRegisters, instructions::*};
 
@@ -38,25 +38,25 @@ pub enum PICMnemonic {
 
 
 trait TuringMachine {
-    fn fetch(&mut self) -> ();
-    fn execute(&mut self) -> ();
-    fn tick(&mut self) -> ();
-    fn decode_mnemonic(&mut self) -> ();
+    fn fetch(&mut self);
+    fn execute(&mut self);
+    fn tick(&mut self);
+    fn decode_mnemonic(&mut self);
 }
 
 trait Programmable {
-    fn program_chip(&mut self, new_program: [u12; 0x200]) -> ();
+    fn program_chip(&mut self, new_program: [u12; 0x200]);
 }
 
 impl Programmable for PIC10F200 {
-    fn program_chip(&mut self, new_program: [u12; 0x200]) -> () {
+    fn program_chip(&mut self, new_program: [u12; 0x200]) {
         self.program_memory.flash(new_program);
         self.data_memory.flash();
     }
 }
 
 impl TuringMachine for PIC10F200 {
-    fn fetch(&mut self) -> () {
+    fn fetch(&mut self) {
         //this is just a temprory variable, not the actual PC register
         let PCL = self.data_memory.read(u5::new(SpecialPurposeRegisters::PCL as u16));
 
@@ -65,18 +65,18 @@ impl TuringMachine for PIC10F200 {
         self.current_instruction = PICInstruction::from_u12(self.program_memory.fetch(self.program_counter));
     }
 
-    fn execute(&mut self) -> () {
+    fn execute(&mut self) {
         //start the pipeline
         self.decode_mnemonic();
     }
 
-    fn tick(&mut self) -> () {
+    fn tick(&mut self) {
         //Execute first, per the pipeline flow
         self.execute(); //the first cycle should skip execution, AKA when PCL == RESET_VECTOR
         self.fetch();
     }
 
-    fn decode_mnemonic(&mut self) ->  ()
+    fn decode_mnemonic(&mut self)
     {
         match self.current_instruction.instruction_category {
             PICCategory::ALUOperation => {
@@ -169,13 +169,10 @@ pub struct PICInstruction  {
 
 impl PICInstruction {
     pub fn from_u12(instruction: u12) -> PICInstruction {
-        let mut pic_instruction = PICInstruction {
+       PICInstruction {
             instruction_raw: instruction,
             instruction_category: PICInstruction::decode_category(instruction),
-        };    
-        //pic_instruction
-
-        return pic_instruction;
+        }
     }
 
 

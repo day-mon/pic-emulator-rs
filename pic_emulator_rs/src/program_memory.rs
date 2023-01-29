@@ -9,10 +9,12 @@ use crate::nbitnumber::{u12, u9, self, NumberOperations};
 
 pub const RESET_VECTOR: u12 = nbitnumber::NBitNumber { value: 0x00 };
 
+
 pub struct ProgramMemory {
     memory: [u12; 0x200],
     stack: [u9; 0x002]
 }
+
 
 
 impl ProgramMemory {
@@ -24,10 +26,10 @@ impl ProgramMemory {
     }
     
     pub fn fetch(&self, program_counter : u9) -> u12 {
-        return self.memory[program_counter.as_usize()];
+         self.memory[program_counter.as_usize()]
     }
 
-    pub fn flash(&mut self, new_program: [u12; 0x200]) -> () {
+    pub fn flash(&mut self, new_program: [u12; 0x200])  {
         self.memory = new_program;
     }
 
