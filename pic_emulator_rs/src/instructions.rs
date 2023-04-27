@@ -85,7 +85,9 @@ pub fn ADDWF(pic: &mut PIC10F200)  {
     let instruction = pic.current_instruction;
     let f = instruction.extract_f();
     let f_value = pic.data_memory.read(f);
-    pic.data_memory.write(f, f_value + w);
+    let result = f_value + w;
+
+    pic.data_memory.write(f, result);
 }
 
 pub fn MOVF(pic: &mut PIC10F200)  {
@@ -144,19 +146,49 @@ pub fn INCFSZ(pic: &mut PIC10F200)  {
 /* Bit Operation */
 
 pub fn BCF(pic: &mut PIC10F200)  {
-    todo!()
+    let instruction = pic.current_instruction;
+    let f = instruction.extract_f();
+    let b = instruction.extract_b();
+    let f_value = pic.data_memory.read(f);
+    let result: u8 = f_value & !(1 << b.as_u16());
+
+    pic.data_memory.write(f, result);
 }
 
 pub fn BSF(pic: &mut PIC10F200)  {
-    todo!()
+    let instruction = pic.current_instruction;
+    let f = instruction.extract_f();
+    let b = instruction.extract_b();
+    let f_value = pic.data_memory.read(f);
+    let result: u8 = f_value | (1 << b.as_u16());
+
+    pic.data_memory.write(f, result);
 }
 
 pub fn BTFSC(pic: &mut PIC10F200)  {
-    todo!()
+    let instruction = pic.current_instruction;
+    let f = instruction.extract_f();
+    let b = instruction.extract_b();
+    let f_value = pic.data_memory.read(f);
+    let result: u8 = f_value & (1 << b.as_u16());
+
+    if result == 0 {
+        // Skip the next instruction
+        pic.program_counter = pic.program_counter + u9::new(1);
+    }
 }
 
 pub fn BTFSS(pic: &mut PIC10F200)  {
-    todo!()
+    let instruction = pic.current_instruction;
+    let f = instruction.extract_f();
+    let b = instruction.extract_b();
+    let f_value = pic.data_memory.read(f);
+    let result: u8 = f_value & (1 << b.as_u16());
+
+    if result == 1 {
+        // Skip the next instruction
+        pic.program_counter = pic.program_counter + u9::new(1);
+    }
 }
 
 /* Control Transfers */
