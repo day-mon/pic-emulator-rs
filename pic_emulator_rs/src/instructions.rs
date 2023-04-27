@@ -5,10 +5,15 @@ use crate::pic::PIC10F200;
 
 pub fn HALT(pic: &mut PIC10F200)  {
     todo!()
+    //halt the program counter
 }
-// Miscellaneous
 
-pub fn NOP(pic: &mut PIC10F200)  {}
+/* Miscellaneous */
+
+pub fn NOP(pic: &mut PIC10F200)  {
+    //Do nothing
+    return;
+}
 
 pub fn OPTION(pic: &mut PIC10F200)  {
     todo!()
@@ -31,6 +36,7 @@ pub fn MOVLB(pic: &mut PIC10F200)  {
 }
 
 pub fn RETURN(pic: &mut PIC10F200)  {
+    //pop the stack and move the value to the program counter
     todo!()
 }
 
@@ -38,12 +44,15 @@ pub fn RETFIE(pic: &mut PIC10F200)  {
     todo!()
 }
 
-// ALU Operation
+/* ALU Operation */
 
 pub fn MOVWF(pic: &mut PIC10F200)  {
     // f <- W
     let instruction = pic.current_instruction;
     let f = instruction.extract_f();
+    let w = pic.w_register;
+
+    pic.data_memory.write(f, w);
 }
 
 pub fn CLR(pic: &mut PIC10F200)  {
@@ -73,7 +82,10 @@ pub fn XORWF(pic: &mut PIC10F200)  {
 pub fn ADDWF(pic: &mut PIC10F200)  {
     // dest ← f+W 
     let w = pic.w_register;
-    
+    let instruction = pic.current_instruction;
+    let f = instruction.extract_f();
+    let f_value = pic.data_memory.read(f);
+    pic.data_memory.write(f, f_value + w);
 }
 
 pub fn MOVF(pic: &mut PIC10F200)  {
@@ -95,7 +107,7 @@ pub fn MOVF(pic: &mut PIC10F200)  {
     if d.as_u16() == 0 {
         pic.w_register = f_value;
     } else {
-        pic.data_memory.write(f.as_u16() as u8, f_value);
+        pic.data_memory.write(f, f_value);
     }
     
 }
@@ -129,7 +141,7 @@ pub fn INCFSZ(pic: &mut PIC10F200)  {
     todo!()
 }
 
-// Bit Operation
+/* Bit Operation */
 
 pub fn BCF(pic: &mut PIC10F200)  {
     todo!()
@@ -147,7 +159,7 @@ pub fn BTFSS(pic: &mut PIC10F200)  {
     todo!()
 }
 
-// Control Transfers
+/* Control Transfers */
 
 pub fn GOTO(pic: &mut PIC10F200)  {
     // Set the program counter PC to 
@@ -163,13 +175,20 @@ pub fn CALL(pic: &mut PIC10F200)  {
 }
 
 pub fn RETLW(pic: &mut PIC10F200)  {
-    todo!()
+    // W <- k then return()
+    MOVLW(pic);
+    RETURN(pic);
 }
 
-// Operations with W
+/* Operations with W */
 
 pub fn MOVLW(pic: &mut PIC10F200)  {
-    todo!()
+    // W <- k
+    let instruction = pic.current_instruction;
+    let f = instruction.extract_f();
+    let k: u8 = instruction.extract_k();
+
+    pic.data_memory.write(f, k);
 }
 
 pub fn IORLW(pic: &mut PIC10F200)  {

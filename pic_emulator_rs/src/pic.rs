@@ -182,8 +182,8 @@ impl PICInstruction {
             // bit  -> 0100 | 0000 | 0000
             // control 1000 | 0000 | 0000
             // operations = 1100 | 0000 | 0000
-            0x0000 => match instruction.as_u16() & (0x03E0) {
-                0x0000 => PICCategory::Miscellaneous, 
+            0x000 => match instruction.as_u16() & (0x3E0) {
+                0x000 => PICCategory::Miscellaneous, 
                 // 0000001
                 // 1111111
                 _ => PICCategory::ALUOperation,
@@ -195,20 +195,20 @@ impl PICInstruction {
         }
     }
 
-    pub fn extract_k(&self) -> NBitNumber<3>{
-        u3::new(self.instruction_raw.as_u16() & 0xFF)
+    pub fn extract_k(&self) -> u8{
+        (self.instruction_raw.as_u16() & 0x0FF) as u8
     }
 
     pub fn extract_d(&self) -> NBitNumber<1>{
-        NBitNumber::new(self.instruction_raw.as_u16() & 0x20)
+        NBitNumber::new(self.instruction_raw.as_u16() & 0x020)
     }
 
     pub fn extract_f(&self) -> NBitNumber<5>{
-       NBitNumber::new(self.instruction_raw.as_u16() & 0x1F)
+       NBitNumber::new(self.instruction_raw.as_u16() & 0x01F)
     }
 
     pub fn extract_b(&self) -> NBitNumber<3>{
-        todo!()
+        NBitNumber::new((self.instruction_raw.as_u16() & 0x0E0) >> 5)
     }
 
     pub fn extract_k_goto(&self) -> NBitNumber<9> {
@@ -216,11 +216,11 @@ impl PICInstruction {
     }
 
     pub fn extract_k_movlb(&self) -> NBitNumber<3> {
-        u3::new(self.instruction_raw.as_u16() & 0x7)
+        u3::new(self.instruction_raw.as_u16() & 0x007)
     }
 
     pub fn extract_f_tris(&self) -> NBitNumber<2> {
-        u2::new(self.instruction_raw.as_u16() & 0x3)
+        u2::new(self.instruction_raw.as_u16() & 0x003)
     }
 
 }

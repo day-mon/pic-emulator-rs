@@ -33,4 +33,22 @@ impl ProgramMemory {
         self.memory = new_program;
     }
 
+    pub fn pop(&mut self) -> u9 {
+        //get the value at the top of the stack then move the contents of the up
+        let value = self.stack[0];
+        for i in 0..self.stack.len() - 1 {
+            self.stack[i] = self.stack[i + 1];
+        }
+        return value;
+    }
+
+    pub fn push(&mut self, value: u9) {
+        //move the contents of the stack down then add the value to the top
+        //overflow is ignored
+        for i in (1..self.stack.len()).rev() {
+            self.stack[i] = self.stack[i - 1];
+        }
+        self.stack[0] = value;
+    }
+
 }

@@ -4,7 +4,7 @@ use crate::nbitnumber::{u3, u5, u7, u9, u12};
 //7 special purpose registers
 //16 general purpose registers
 //0x10 - 0x1F are GP
-//0x00 - 0x10 are special + undefined
+//0x00 - 0x0F are special + undefined
 pub const REG_FILE_SIZE : u8 = 0x20;
 pub const REG_FILE_MAX_ADDR : u8 =  0x1F;
 pub const REG_FILE_GP_OFFSET : u8 = 0x10;
@@ -47,17 +47,18 @@ impl RegisterFile {
         }
     }
 
-    pub fn write(&mut self, address: u8, val : u8) -> () {
-        if address == SpecialPurposeRegisters::INDF as u8 {
+    pub fn write(&mut self, address: u5, val : u8) -> () {
+        
+        if address.as_usize() == SpecialPurposeRegisters::INDF as usize  {
             // this is not a physical address
             return;
         }
-        if (0x08..=0x0F).contains(&address) {
+        if (0x08..=0x0F).contains(&address.as_usize()) {
             // unimplemented registers in PIC10F200
             return;
         }
 
-        self.registers[address as usize].value = val;
+        self.registers[address.as_usize()].value = val;
     }
     
     pub fn flash(&mut self) {
