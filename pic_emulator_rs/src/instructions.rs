@@ -1,4 +1,4 @@
-use crate::nbitnumber::{u9, NumberOperations, NBitNumber};
+use crate::nbitnumber::{u12, u9, NumberOperations, NBitNumber};
 use crate::pic::PIC10F200;
 
 
@@ -37,90 +37,130 @@ pub fn MOVLB(pic: &mut PIC10F200)  {
 
 pub fn RETURN(pic: &mut PIC10F200)  {
     //pop the stack and move the value to the program counter
-    todo!()
+    pic.program_counter = pic.program_memory.pop();
 }
 
 pub fn RETFIE(pic: &mut PIC10F200)  {
     todo!()
 }
 
-/* ALU Operation */
+/* ALU Operation - if d is '0' store result in W, if d is '1' store result in f*/
+
+fn store_wf(pic: &mut PIC10F200, result: u8){
+    let d = pic.current_instruction.extract_d();
+    if d.as_u16() == 1{
+        pic.w_register = result;
+    } else {
+        pic.data_memory.write(pic.current_instruction.extract_f(), result);
+    }
+}
+
+fn update_Z(pic: &mut PIC10F200, result: u8){
+    //TODO: implement Z flag
+    // if result == 0 {
+    //     pic.data_memory;
+    // } else {
+    //     pic.data_memory.clear_z_flag();
+    // }
+}
+
+fn get_f_value(pic: &mut PIC10F200) -> u8 {
+    let f = pic.current_instruction.extract_f();
+    return pic.data_memory.read(f)
+}
 
 pub fn MOVWF(pic: &mut PIC10F200)  {
-    // f <- W
-    let instruction = pic.current_instruction;
-    let f = instruction.extract_f();
+    // f <- W, only ALU OP that does not have d bit
+    let f = pic.current_instruction.extract_f();
     let w = pic.w_register;
 
     pic.data_memory.write(f, w);
 }
 
 pub fn CLR(pic: &mut PIC10F200)  {
-    todo!()
+    //sometimes called CLRF when d is '1' or CLRW when d is '0'
+    // W/f <- 0
+    update_Z(pic, 0);
+    store_wf(pic, 0);
 }
 
 pub fn SUBWF(pic: &mut PIC10F200)  {
-    todo!()
+    // dest <- f - W
+    let f_value = get_f_value(pic);
+    let result = pic.w_register - f_value;
+
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn DECF(pic: &mut PIC10F200)  {
-    todo!()
+    // dest <- f - 1
+    let f_value = get_f_value(pic);
+    let result = f_value - 1;
+
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn IORWF(pic: &mut PIC10F200)  {
-    todo!()
+    let f_value = get_f_value(pic);
+    let result = f_value | pic.w_register;
+
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn ANDWF(pic: &mut PIC10F200)  {
-    todo!()
+    // dest <- f AND W
+    let f_value = get_f_value(pic);
+    let result = f_value & pic.w_register;
+
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn XORWF(pic: &mut PIC10F200)  {
-    todo!()
+    // dest <- f XOR W
+    let f_value = get_f_value(pic);
+    let result = f_value ^ pic.w_register;
+
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn ADDWF(pic: &mut PIC10F200)  {
-    // dest ← f+W 
-    let w = pic.w_register;
-    let instruction = pic.current_instruction;
-    let f = instruction.extract_f();
-    let f_value = pic.data_memory.read(f);
-    let result = f_value + w;
+    // dest <- f+W 
+    let f_value = get_f_value(pic);
+    let result = f_value + pic.w_register;
 
-    pic.data_memory.write(f, result);
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn MOVF(pic: &mut PIC10F200)  {
-    // The contents of register ‘f’ are
-    // moved to destination ‘d’. If ‘d’ is ‘0’,
-    // destination is the W register. If ‘d’
-    // is ‘1’, the destination is file
-    // register ‘f’. ‘d’ = 1 is useful as a
-    // test of a file register, since status
-    // flag Z is affected.
-    
-    // Move the contents of the f register to the
-    // dest register
-    let instruction = pic.current_instruction;
-    let f = instruction.extract_f();
-    let d = instruction.extract_d();
-    let f_value = pic.data_memory.read(f);
+    // dest <- f
+    let result = get_f_value(pic);
 
-    if d.as_u16() == 0 {
-        pic.w_register = f_value;
-    } else {
-        pic.data_memory.write(f, f_value);
-    }
-    
+    update_Z(pic, result);
+    store_wf(pic, result);    
 }
 
 pub fn COMF(pic: &mut PIC10F200)  {
-    todo!()
+    // dest <- bitwise NOT f
+    let f_value = get_f_value(pic);
+    let result = !f_value;
+
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn INCF(pic: &mut PIC10F200)  {
-   // let register = pic.current_instruction.extract_f();
-   // pic.data_memory.read(r)
+    // dest <- f + 1
+    let f_value = get_f_value(pic);
+    let result = f_value + 1;
+
+    update_Z(pic, result);
+    store_wf(pic, result);
 }
 
 pub fn DECFSZ(pic: &mut PIC10F200)  {
@@ -191,7 +231,7 @@ pub fn BTFSS(pic: &mut PIC10F200)  {
     }
 }
 
-/* Control Transfers */
+/* Control Transfers - TWO CYCLE INSTRUCTIONS */
 
 pub fn GOTO(pic: &mut PIC10F200)  {
     // Set the program counter PC to 
@@ -199,15 +239,19 @@ pub fn GOTO(pic: &mut PIC10F200)  {
     // at k using instruction.extract_k_goto()
     let instruction = pic.current_instruction;
     let k = instruction.extract_k_goto();
-    pic.program_counter = k;
+    pic.program_counter = k; //TODO: make sure that program counter does not increment at the end of the cycle
 }
 
 pub fn CALL(pic: &mut PIC10F200)  {
-    todo!()
+    //push PC + 1 onto stack and GOTO k
+    pic.program_memory.push(pic.program_counter + u9::new(1));
+    //mask out bit 8
+    pic.current_instruction.instruction_raw = pic.current_instruction.instruction_raw & u12::new(0xEFF);
+    GOTO(pic);
 }
 
 pub fn RETLW(pic: &mut PIC10F200)  {
-    // W <- k then return()
+    // W <- k then RETURN()
     MOVLW(pic);
     RETURN(pic);
 }
