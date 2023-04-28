@@ -24,13 +24,13 @@ impl Register {
 
 pub enum SpecialPurposeRegisters {
     INDF = 0x00, //Indirect reference
-    TMR0, //Timer
-    PCL, //Program counter (to NEXT instruction)
-    STATUS ,
+    TMR0, //Timer: 8-bit RTC
+    PCL, //Program counter (to NEXT instruction): low order 8 bits of 10-bit PC
+    STATUS , //Status register: GPWUF, CWUF, - , !TO, !PD, Z, DC, C
     FSR, // pointer
-    OSCCAL, //oscillator calibration
-    GPIO, //general purpose input/output (pins)
-    CMCON0 = 0x07,
+    OSCCAL, //oscillator calibration: CAL6, CAL5, CAL4, CAL3, CAL2, CAL1, CAL0, FOSC4
+    GPIO, //general purpose input/output (pins) : -, -, -, -, GP3, GP2, GP1, GP0
+    CMCON0 = 0x07, // comparator control: COUT, !COUTEN, POL, !CMPT0CS, CMPON, CNREF, CPREF, !CWU
     // 0x008 -> 0x0F is Unimplemented
     // 0x10 -> 0x1F is General Purpose Registers
 }

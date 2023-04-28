@@ -42,6 +42,7 @@ trait TuringMachine {
     fn execute(&mut self);
     fn tick(&mut self);
     fn decode_mnemonic(&mut self);
+    fn power_on(&mut self);
 }
 
 trait Programmable {
@@ -56,6 +57,15 @@ impl Programmable for PIC10F200 {
 }
 
 impl TuringMachine for PIC10F200 {
+    fn power_on(&mut self) {
+        //data sheet page 18
+        self.data_memory.write(u5::new(SpecialPurposeRegisters::PCL as u16), 0xFF);
+        self.data_memory.write(u5::new(SpecialPurposeRegisters::STATUS as u16), 0x18);
+        self.data_memory.write(u5::new(SpecialPurposeRegisters::FSR as u16), 0x70);
+        self.data_memory.write(u5::new(SpecialPurposeRegisters::OSCCAL as u16), 0xFE);
+        self.data_memory.write(u5::new(SpecialPurposeRegisters::CMCON0 as u16), 0xFF);
+    }
+
     fn fetch(&mut self) {
         //this is just a temprory variable, not the actual PC register
         let PCL = self.data_memory.read(u5::new(SpecialPurposeRegisters::PCL as u16));

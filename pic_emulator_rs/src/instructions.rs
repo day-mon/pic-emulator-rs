@@ -16,6 +16,8 @@ pub fn NOP(pic: &mut PIC10F200)  {
 }
 
 pub fn OPTION(pic: &mut PIC10F200)  {
+    //Copy the contents of W to OPTION register
+    //Option may or may not be implemented in the emulator
     todo!()
 }
 
@@ -32,6 +34,7 @@ pub fn TRIS(pic: &mut PIC10F200)  {
 }
 
 pub fn MOVLB(pic: &mut PIC10F200)  {
+    //Not implemented in the emulator
     todo!()
 }
 
@@ -261,20 +264,34 @@ pub fn RETLW(pic: &mut PIC10F200)  {
 pub fn MOVLW(pic: &mut PIC10F200)  {
     // W <- k
     let instruction = pic.current_instruction;
-    let f = instruction.extract_f();
     let k: u8 = instruction.extract_k();
 
-    pic.data_memory.write(f, k);
+    pic.w_register = k;
 }
 
 pub fn IORLW(pic: &mut PIC10F200)  {
-    todo!()
+    // W <- W OR k
+    let instruction = pic.current_instruction;
+    let k: u8 = instruction.extract_k();
+    let result = pic.w_register | k;
+
+    pic.w_register = result;
 }
 
 pub fn ANDLW(pic: &mut PIC10F200)  {
-    todo!()
+    // W <- W AND k
+    let instruction = pic.current_instruction;
+    let k: u8 = instruction.extract_k();
+    let result = pic.w_register & k;
+
+    pic.w_register = result;
 }
 
 pub fn XORLW(pic: &mut PIC10F200)  {
-    todo!()
+    // W <- W XOR k
+    let instruction = pic.current_instruction;
+    let k: u8 = instruction.extract_k();
+    let result = pic.w_register ^ k;
+
+    pic.w_register = result;
 }
