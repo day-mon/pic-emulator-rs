@@ -1,4 +1,5 @@
 use crate::nbitnumber::{u12, u9, NumberOperations, NBitNumber};
+use crate::data_memory::Status_Masks;
 use crate::pic::PIC10F200;
 
 
@@ -22,11 +23,17 @@ pub fn OPTION(pic: &mut PIC10F200)  {
 }
 
 pub fn SLEEP(pic: &mut PIC10F200)  {
-    todo!()
+    todo!();
+    pic.data_memory.set_flag(NBitNumber::new(Status_Masks::TO as u16) , NBitNumber::new(1));
+    pic.data_memory.set_flag(NBitNumber::new(Status_Masks::PD as u16) , NBitNumber::new(0));
+    //also set the prescaler to 0 in option register
 }
 
 pub fn CLRWDT(pic: &mut PIC10F200)  {
-    todo!()
+    todo!();
+    pic.data_memory.set_flag(NBitNumber::new(Status_Masks::TO as u16) , NBitNumber::new(1));
+    pic.data_memory.set_flag(NBitNumber::new(Status_Masks::PD as u16) , NBitNumber::new(1));
+    //also set the prescaler to 0 in option register
 }
 
 pub fn TRIS(pic: &mut PIC10F200)  {
@@ -47,9 +54,10 @@ pub fn RETFIE(pic: &mut PIC10F200)  {
     todo!()
 }
 
-/* ALU Operation - if d is '0' store result in W, if d is '1' store result in f*/
+/* ALU Operation*/
 
 fn store_wf(pic: &mut PIC10F200, result: u8){
+    //if d is '0' store result in W, if d is '1' store result in f
     let d = pic.current_instruction.extract_d();
     if d.as_u16() == 1{
         pic.w_register = result;
@@ -59,12 +67,16 @@ fn store_wf(pic: &mut PIC10F200, result: u8){
 }
 
 fn update_Z(pic: &mut PIC10F200, result: u8){
-    //TODO: implement Z flag
-    // if result == 0 {
-    //     pic.data_memory;
-    // } else {
-    //     pic.data_memory.clear_z_flag();
-    // }
+    let is_zero:NBitNumber<1> = NBitNumber::new((result == 0) as u16);
+    pic.data_memory.set_flag(NBitNumber::new(Status_Masks::Z as u16) , is_zero);
+}
+
+fn update_C() {
+    todo!()
+}
+
+fn update_DC() {
+    todo!()
 }
 
 fn get_f_value(pic: &mut PIC10F200) -> u8 {
@@ -93,6 +105,8 @@ pub fn SUBWF(pic: &mut PIC10F200)  {
     let result = pic.w_register - f_value;
 
     update_Z(pic, result);
+    update_C();
+    update_DC();
     store_wf(pic, result);
 }
 
@@ -137,6 +151,8 @@ pub fn ADDWF(pic: &mut PIC10F200)  {
     let result = f_value + pic.w_register;
 
     update_Z(pic, result);
+    update_C();
+    update_DC();
     store_wf(pic, result);
 }
 
@@ -171,11 +187,13 @@ pub fn DECFSZ(pic: &mut PIC10F200)  {
 }
 
 pub fn RRF(pic: &mut PIC10F200)  {
-    todo!()
+    todo!();
+    update_C();
 }
 
 pub fn RLF(pic: &mut PIC10F200)  {
-    todo!()
+    todo!();
+    update_C();
 }
 
 pub fn SWAPF(pic: &mut PIC10F200)  {
@@ -189,6 +207,7 @@ pub fn INCFSZ(pic: &mut PIC10F200)  {
 /* Bit Operation */
 
 pub fn BCF(pic: &mut PIC10F200)  {
+    // clear bit b in register f
     let instruction = pic.current_instruction;
     let f = instruction.extract_f();
     let b = instruction.extract_b();
@@ -199,6 +218,7 @@ pub fn BCF(pic: &mut PIC10F200)  {
 }
 
 pub fn BSF(pic: &mut PIC10F200)  {
+    // set bit b in register f
     let instruction = pic.current_instruction;
     let f = instruction.extract_f();
     let b = instruction.extract_b();
@@ -209,6 +229,7 @@ pub fn BSF(pic: &mut PIC10F200)  {
 }
 
 pub fn BTFSC(pic: &mut PIC10F200)  {
+    // skip next instruction if bit b in register f is clear
     let instruction = pic.current_instruction;
     let f = instruction.extract_f();
     let b = instruction.extract_b();
@@ -222,6 +243,7 @@ pub fn BTFSC(pic: &mut PIC10F200)  {
 }
 
 pub fn BTFSS(pic: &mut PIC10F200)  {
+    // skip next instruction if bit b in register f is set
     let instruction = pic.current_instruction;
     let f = instruction.extract_f();
     let b = instruction.extract_b();
@@ -234,7 +256,8 @@ pub fn BTFSS(pic: &mut PIC10F200)  {
     }
 }
 
-/* Control Transfers - TWO CYCLE INSTRUCTIONS */
+/* Control Transfers - TWO CYCLE INSTRUCTIONS, since the fetch instructino is "flushed" from the pipeline */
+//TODO: implement two cycle instructions
 
 pub fn GOTO(pic: &mut PIC10F200)  {
     // Set the program counter PC to 
@@ -250,7 +273,7 @@ pub fn CALL(pic: &mut PIC10F200)  {
     pic.program_memory.push(pic.program_counter + u9::new(1));
     //mask out bit 8
     pic.current_instruction.instruction_raw = pic.current_instruction.instruction_raw & u12::new(0xEFF);
-    GOTO(pic);
+    GOTO(pic); //TODO: may not be able to use GOTO as that itself is a two cycle instruction
 }
 
 pub fn RETLW(pic: &mut PIC10F200)  {

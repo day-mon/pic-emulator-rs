@@ -1,4 +1,4 @@
-use crate::nbitnumber::{NumberOperations};
+use crate::nbitnumber::{NumberOperations, NBitNumber};
 use crate::nbitnumber::{u3, u5, u7, u9, u12};
 
 //7 special purpose registers
@@ -25,15 +25,56 @@ impl Register {
 pub enum SpecialPurposeRegisters {
     INDF = 0x00, //Indirect reference
     TMR0, //Timer: 8-bit RTC
-    PCL, //Program counter (to NEXT instruction): low order 8 bits of 10-bit PC
-    STATUS , //Status register: GPWUF, CWUF, - , !TO, !PD, Z, DC, C
+    PCL, //Program counter low
+    STATUS , //Status register
     FSR, // pointer
-    OSCCAL, //oscillator calibration: CAL6, CAL5, CAL4, CAL3, CAL2, CAL1, CAL0, FOSC4
-    GPIO, //general purpose input/output (pins) : -, -, -, -, GP3, GP2, GP1, GP0
-    CMCON0 = 0x07, // comparator control: COUT, !COUTEN, POL, !CMPT0CS, CMPON, CNREF, CPREF, !CWU
+    OSCCAL, //oscillator calibration
+    GPIO, //general purpose input/output (pins) 
+    CMCON0 = 0x07, // comparator control
     // 0x008 -> 0x0F is Unimplemented
     // 0x10 -> 0x1F is General Purpose Registers
 }
+
+pub enum Status_Masks {
+    C = 0x00, // carry/borrow flag
+    DC = 0x01, // digit carry/borrow flag
+    Z = 0x02, // zero flag
+    PD = 0x03, // power down flag
+    TO = 0x04, // timeout flag
+    // 0x05 is Unimplemented
+    CWUF = 0x06, // comparator wake up flag
+    GPWUF = 0x07, // general purpose wake up flag
+}
+
+pub enum OSCCAL_Masks {
+    FOSC4 = 0x00, // oscillator frequency select
+    CAL0 = 0x01, 
+    CAL1 = 0x02, 
+    CAL2 = 0x03, 
+    CAL3 = 0x04, 
+    CAL4 = 0x05, 
+    CAL5 = 0x06, 
+    CAL6 = 0x07, 
+}
+
+pub enum GPIO_Masks {
+    GP0 = 0x00,
+    GP1 = 0x01,
+    GP2 = 0x02,
+    GP3 = 0x03,
+}
+
+pub enum CMCON0_Masks {
+    CWU = 0x00, // comparator wake up flag
+    CPREF = 0x01, // comparator positive reference
+    CNREF = 0x02, // comparator negative reference
+    CMPON = 0x03, // comparator on
+    CMPT0CS = 0x04, // comparator timer 0 clock source
+    POL = 0x05, // comparator output polarity
+    COUTEN = 0x06, // comparator output enable
+    COUT = 0x07, // comparator output
+}
+
 #[derive(Default)]
 pub struct RegisterFile {
     registers: [Register; REG_FILE_SIZE as usize]
@@ -59,6 +100,19 @@ impl RegisterFile {
         }
 
         self.registers[address.as_usize()].value = val;
+    }
+
+    pub fn set_flag(&mut self, mask: u3, val: NBitNumber<1>) -> () {
+        //this function is used to set a bit of the status register to a value
+        if mask.as_u16() > 0x07 {
+            panic!("Invalid mask for status register");
+        }
+
+        if val == NBitNumber::new(1) {
+            self.registers[SpecialPurposeRegisters::STATUS as usize].value |= 1 << mask.as_u16();
+        } else {
+            self.registers[SpecialPurposeRegisters::STATUS as usize].value &= 0 << mask.as_u16();
+        }
     }
     
     pub fn flash(&mut self) {

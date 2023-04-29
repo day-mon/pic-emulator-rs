@@ -81,6 +81,9 @@ impl TuringMachine for PIC10F200 {
     }
 
     fn tick(&mut self) {
+        //One instruction cycle consists of four clock cycles
+        //Internal clock is 4MHz, so one instruction cycle is 1us
+        //4 MHz is max clock speed for this chip
         //Execute first, per the pipeline flow
         self.execute(); //the first cycle should skip execution, AKA when PCL == RESET_VECTOR
         self.fetch();
