@@ -40,20 +40,6 @@ pub fn TRIS(pic: &mut PIC10F200)  {
     todo!()
 }
 
-pub fn MOVLB(pic: &mut PIC10F200)  {
-    //Not implemented in the emulator
-    todo!()
-}
-
-pub fn RETURN(pic: &mut PIC10F200)  {
-    //pop the stack and move the value to the program counter
-    pic.program_counter = pic.program_memory.pop();
-}
-
-pub fn RETFIE(pic: &mut PIC10F200)  {
-    todo!()
-}
-
 /* ALU Operation*/
 
 fn store_wf(pic: &mut PIC10F200, result: u8){
@@ -279,7 +265,8 @@ pub fn CALL(pic: &mut PIC10F200)  {
 pub fn RETLW(pic: &mut PIC10F200)  {
     // W <- k then RETURN()
     MOVLW(pic);
-    RETURN(pic);
+    //pop the stack and move the value to the program counter
+    pic.program_counter = pic.program_memory.pop();
 }
 
 /* Operations with W */

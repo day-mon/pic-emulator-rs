@@ -141,9 +141,6 @@ impl TuringMachine for PIC10F200 {
                     0x003 => SLEEP(self),
                     0x004 => CLRWDT(self),
                     0x005..=0x007 => TRIS(self),
-                    0x010..=0x017 => MOVLB(self),
-                    0x001E => RETURN(self),
-                    0x001F => RETFIE(self),
                     _ => HALT(self),
                 }
             }
@@ -197,8 +194,6 @@ impl PICInstruction {
             // operations = 1100 | 0000 | 0000
             0x000 => match instruction.as_u16() & (0x3E0) {
                 0x000 => PICCategory::Miscellaneous, 
-                // 0000001
-                // 1111111
                 _ => PICCategory::ALUOperation,
             }
             0x400 => PICCategory::BitOperation,
